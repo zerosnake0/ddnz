@@ -3,7 +3,8 @@ import logging
 import logging.config
 import json
 import time
-import socket
+from socket import gethostname
+from getpass import getuser
 import smtplib
 from email.mime.text import MIMEText
 
@@ -52,15 +53,21 @@ def report(dip):
     dst = os.getenv('DDNZ_MAIL_DST')
     if dst:
         logging.info("Reporting")
-        mx = resolve(dst)
-        msg = MIMEText(''.join(['{}: {}\n'.format(k, v) for k, v in dip.items()]))
-        msg['Subject'] = 'IP Report'
-        msg['From'] = 'ddnz@{}.local'.format(socket.gethostname())
-        msg['To'] = dst
-        s = smtplib.SMTP(mx)
-        s.sendmail(msg['From'], [msg['To']], msg.as_string())
-        s.quit()
-        return True
+        try:
+            mx = resolve(dst)
+            content = "user: {}\n".format(getuser())
+            content += "host: {}\n".format(gethostname())
+            content += ''.join(['{}: {}\n'.format(k, v) for k, v in dip.items()])
+            msg = MIMEText(content)
+            msg['Subject'] = 'IP Report'
+            msg['From'] = 'ddnz@ddnz.local'
+            msg['To'] = dst
+            s = smtplib.SMTP(mx)
+            s.sendmail(msg['From'], [msg['To']], msg.as_string())
+            s.quit()
+            return True
+        except:
+            logger.exception("Unable to report")
 
 
 def main():
@@ -92,13 +99,14 @@ def main():
     ts = time.time()
     delta = ts - old_ts
     logger.info("elapsed %.2f", delta)
-    if delta > 600:  # every 10 min
-        try:
-            if report(dip):
-                data['ts'] = ts
-                updated = True
-        except:
-            logger.exception("Unable to report")
+    try:
+        period = float(os.getenv('DDNZ_MAIL_PERIOD', '900'))
+        logger.info("period %.2f", period)
+        if delta > period and report(dip):
+            data['ts'] = ts
+            updated = True
+    except:
+        logger.exception("Error while checking reporting")
 
     if updated:
         savedata(data)
