@@ -1,0 +1,12 @@
+@echo off
+
+set DDNZ_DUCKDNS_DOMAIN=
+set DDNZ_DUCKDNS_TOEKN=
+set DDNZ_EXT_PORT=
+set DDNZ_INT_PORT=
+set DDNZ_MAIL_DST=
+set DDNZ_MAIL_PERIOD=
+set TMPDIR=
+d:
+cd d:/ddnz
+python -m ddnz
