@@ -49,16 +49,18 @@ def resolve(dst):
 
 
 def report(dip):
-    logging.info("Reporting")
-    dst = os.environ['DDNZ_MAIL_DST']
-    mx = resolve(dst)
-    msg = MIMEText(''.join(['{}: {}\n'.format(k, v) for k, v in dip.items()]))
-    msg['Subject'] = 'IP Report'
-    msg['From'] = 'ddnz@{}.local'.format(socket.gethostname())
-    msg['To'] = dst
-    s = smtplib.SMTP(mx)
-    s.sendmail(msg['From'], [msg['To']], msg.as_string())
-    s.quit()
+    dst = os.getenv('DDNZ_MAIL_DST')
+    if dst:
+        logging.info("Reporting")
+        mx = resolve(dst)
+        msg = MIMEText(''.join(['{}: {}\n'.format(k, v) for k, v in dip.items()]))
+        msg['Subject'] = 'IP Report'
+        msg['From'] = 'ddnz@{}.local'.format(socket.gethostname())
+        msg['To'] = dst
+        s = smtplib.SMTP(mx)
+        s.sendmail(msg['From'], [msg['To']], msg.as_string())
+        s.quit()
+        return True
 
 
 def main():
@@ -92,9 +94,9 @@ def main():
     logger.info("elapsed %.2f", delta)
     if delta > 600:  # every 10 min
         try:
-            report(dip)
-            data['ts'] = ts
-            updated = True
+            if report(dip):
+                data['ts'] = ts
+                updated = True
         except:
             logger.exception("Unable to report")
 
