@@ -7,5 +7,5 @@ set DDNZ_INT_PORT=
 set DDNZ_MAIL_DST=
 set DDNZ_MAIL_PERIOD=
 set TMPDIR=
-set PYTHONPATH=%~dp0:%PYTHONPATH%
+set PYTHONPATH=%~dp0;%PYTHONPATH%
 python -m ddnz
