@@ -8,7 +8,8 @@ def main(argv=sys.argv):
     logging.basicConfig(level=logging.INFO)
     try:
         external_port, internal_port = map(int, argv[1:3])
-    except:
+    except Exception as e:
+        print(e)
         print("Usage:", argv[0], "external_port", "internal_port")
         return
 

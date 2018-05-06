@@ -15,5 +15,5 @@ setup(name=NAME,
       author=AUTHOR,
       author_email=AUTHOR_EMAIL,
       packages=find_packages(),
-      install_requires=['dnspython','requests']
-     )
+      install_requires=['dnspython', 'requests']
+      )

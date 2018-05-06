@@ -9,8 +9,8 @@ from ..logger import logger
 
 def checkipformat(ip):
     try:
-        l = map(int, ip.split('.'))
-        return len(l) == 4 and all(i >= 0 and i <= 255 for i in l)
+        lst = list(map(int, ip.split('.')))
+        return len(lst) == 4 and all(0 <= i <= 255 for i in lst)
     except Exception as e:
         logger.debug("Error while checking ip format for %s: %s", ip, e)
         return False
@@ -40,7 +40,8 @@ def checkip(ip, external_port, internal_port):
     logger.info('Accepted at %s from %s', conn.getsockname(), conn.getpeername())
 
     msg = uuid.uuid4().hex
-    c.sendall(msg)
+    coding = 'ascii'
+    c.sendall(msg.encode(coding))
     logger.info("Sent: %s", msg)
     conn.settimeout(IP_CHECK_TIMEOUT)
 
@@ -48,7 +49,7 @@ def checkip(ip, external_port, internal_port):
     length_left = len(msg)
     try:
         while length_left > 0:
-            m = conn.recv(length_left)
+            m = conn.recv(length_left).decode(coding)
             recv_msg += m
             logger.debug("Received: %s", recv_msg)
             if not msg.startswith(recv_msg):

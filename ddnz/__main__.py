@@ -23,8 +23,8 @@ def getlastdata():
             data = json.load(f)
             assert isinstance(data, dict)
             return data
-    except:
-        logger.exception("Unable to get last data")
+    except Exception as e:
+        logger.exception("Unable to get last data: %s", e)
         return {}
 
 
@@ -33,8 +33,8 @@ def savedata(d):
     try:
         with open(DATA_FILE, 'w') as f:
             json.dump(d, f)
-    except:
-        logger.exception("Unable to save data")
+    except Exception as e:
+        logger.exception("Unable to save data: %s", e)
 
 
 def resolve(dst):
@@ -70,8 +70,8 @@ def report(old_ip, new_ip, dip):
             s.sendmail(msg['From'], [msg['To']], msg.as_string())
             s.quit()
             return True
-        except:
-            logger.exception("Unable to report")
+        except Exception as e:
+            logger.exception("Unable to report: %s", e)
 
 
 def main():
@@ -113,8 +113,8 @@ def main():
             if report(old_ip, new_ip, dip):
                 data['ts'] = ts
                 updated = True
-    except:
-        logger.exception("Error while checking reporting")
+    except Exception as e:
+        logger.exception("Error while checking reporting: %s", e)
 
     if updated:
         savedata(data)
