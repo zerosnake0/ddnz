@@ -1,0 +1,10 @@
+#!/bin/sh
+export DDNZ_DUCKDNS_DOMAIN=
+export DDNZ_DUCKDNS_TOEKN=
+export DDNZ_EXT_PORT=
+export DDNZ_INT_PORT=
+export DDNZ_MAIL_DST=
+export DDNZ_MAIL_PERIOD=900
+export TMPDIR=
+export PYTHONPATH=$(dirname "$0")
+/usr/local/bin/python -m ddnz

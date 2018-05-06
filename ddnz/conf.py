@@ -4,13 +4,15 @@ from tempfile import gettempdir
 tempdir = gettempdir()
 
 DATA_FILE = os.path.join(tempdir, 'ddnz_ip.txt')
+REQUESTS_TIMEOUT = int(os.getenv('DDNZ_REQUESTS_TIMEOUT', '10'))
+IP_CHECK_TIMEOUT = int(os.getenv('DDNZ_IP_CHECK_TIMEOUT', '10'))
 
 LOGGING = {
     'version': 1,
     'disable_existing_loggers': True,
     'formatters': {
         'verbose': {
-            'format': '%(levelname).1s %(asctime)s %(module)s %(message)s'
+            'format': '%(levelname).1s %(asctime)s [%(module)s] %(message)s'
         }
     },
     'handlers': {

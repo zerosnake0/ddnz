@@ -49,14 +49,18 @@ def resolve(dst):
     return ans[0][1].to_text().rstrip('.')
 
 
-def report(dip):
+def report(old_ip, new_ip, dip):
     dst = os.getenv('DDNZ_MAIL_DST')
     if dst:
         logging.info("Reporting")
         try:
             mx = resolve(dst)
-            content = "user: {}\n".format(getuser())
+            user = getuser()
+            user = user[0] + '*' * (len(user) - 2) + user[-1]
+            content = "user: {}\n".format(user)
             content += "host: {}\n".format(gethostname())
+            content += "old ip: {}\n".format(old_ip)
+            content += "new ip: {}\n".format(new_ip)
             content += ''.join(['{}: {}\n'.format(k, v) for k, v in dip.items()])
             msg = MIMEText(content)
             msg['Subject'] = 'IP Report'
@@ -87,12 +91,13 @@ def main():
             break
 
     updated = False
-    if new_ip is None:
-        logger.info("IP not changed")
+    if (new_ip is None) and (old_ip is not None):
+        logger.info("IP not changed, old ip: %s", old_ip)
     else:
         logger.info("IP changed from %s to %s", old_ip, new_ip)
         update()
-        data['ip'] = new_ip
+        if new_ip is not None:
+            data['ip'] = new_ip
         updated = True
 
     old_ts = data.get('ts', 0)
@@ -102,9 +107,12 @@ def main():
     try:
         period = float(os.getenv('DDNZ_MAIL_PERIOD', '900'))
         logger.info("period %.2f", period)
-        if delta > period and report(dip):
-            data['ts'] = ts
-            updated = True
+        if delta > period:
+            if not updated:
+                update()
+            if report(old_ip, new_ip, dip):
+                data['ts'] = ts
+                updated = True
     except:
         logger.exception("Error while checking reporting")
 
