@@ -1,6 +1,9 @@
 import os
-import socket
 import uuid
+import http
+import http.server
+import threading
+import requests
 from importlib import import_module
 
 from ..conf import IP_CHECK_TIMEOUT
@@ -16,7 +19,17 @@ def checkipformat(ip):
         return False
 
 
-def checkip(ip, external_port, internal_port):
+def new_handler(msg):
+    class Handler(http.server.BaseHTTPRequestHandler):
+        def do_GET(self):
+            self.send_response(http.HTTPStatus.OK)
+            self.end_headers()
+            self.wfile.write(msg.encode())
+
+    return Handler
+
+
+def checkip(ip, external_port, internal_port, proxy=""):
     # format check
     logger.info("Checking %s format", ip)
     if not checkipformat(ip):
@@ -25,48 +38,38 @@ def checkip(ip, external_port, internal_port):
 
     # connection check
     logger.info("Checking %s with %s, %s", ip, external_port, internal_port)
-    s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-    s.bind(('0.0.0.0', internal_port))
-    s.listen(1)
-    logger.info("Listening at %s", s.getsockname())
-
-    c = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    c.connect((ip, external_port))
-    logger.info("Connected from %s to %s", c.getsockname(), c.getpeername())
-
-    s.settimeout(IP_CHECK_TIMEOUT)
-    conn, addr = s.accept()
-    logger.info('Accepted at %s from %s', conn.getsockname(), conn.getpeername())
-
     msg = uuid.uuid4().hex
-    coding = 'ascii'
-    c.sendall(msg.encode(coding))
-    logger.info("Sent: %s", msg)
-    conn.settimeout(IP_CHECK_TIMEOUT)
+    httpd = http.server.HTTPServer(('', internal_port), new_handler(msg))
 
-    recv_msg = ''
-    length_left = len(msg)
+    th = threading.Thread(target=httpd.serve_forever)
+    th.start()
+
+    url = "http://%s:%s" % (ip, external_port)
+
     try:
-        while length_left > 0:
-            m = conn.recv(length_left).decode(coding)
-            recv_msg += m
-            logger.debug("Received: %s", recv_msg)
-            if not msg.startswith(recv_msg):
-                logger.info("Not matching")
-                return False
-            length_left -= len(m)
+        try:
+            resp = requests.get(url, timeout=IP_CHECK_TIMEOUT)
+        except Exception as e:
+            logger.error("unable to get without proxy: %s", e)
+            if proxy == "":
+                raise
+            logger.info("trying with proxy...")
+            resp = requests.get(url, timeout=IP_CHECK_TIMEOUT, proxies={"http": "http://" + proxy})
+        resp.raise_for_status()
+        logger.info("got message %s", resp.text)
+        if resp.text != msg:
+            return False
+        logger.info("Matched")
+        return True
     finally:
-        logger.info("Received: %s", recv_msg)
-
-    if msg != recv_msg:
-        return False
-
-    logger.info("Matched")
-    return True
+        logger.info("shutting down server")
+        httpd.shutdown()
+        logger.info("joining thread")
+        th.join()
+        logger.info("cleaned up")
 
 
-def getip(external_port, internal_port):
+def getip(external_port, internal_port, proxy=""):
     d = {}
     folder = os.path.join(os.path.dirname(__file__), 'sites')
     ip_success = set()
@@ -85,12 +88,12 @@ def getip(external_port, internal_port):
             logger.info("Result from %s: %s", mname, ip)
             if ip in ip_success:
                 logger.info("%s already verified", ip)
-            elif checkip(ip, external_port, internal_port):
+            elif checkip(ip, external_port, internal_port, proxy):
                 logger.info("%s check success", ip)
                 d[mname] = ip
                 ip_success.add(ip)
             else:
                 logger.info("%s check failed", ip)
         except Exception as e:
-            logger.exception("Unable to get ip from %s: %s", mname, e)
+            logger.error("Unable to get ip from %s: %s", mname, e)
     return d

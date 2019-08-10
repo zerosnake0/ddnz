@@ -1,4 +1,5 @@
 #!/bin/sh
+export DDNZ_PROXY=
 export DDNZ_DUCKDNS_DOMAIN=
 export DDNZ_DUCKDNS_TOEKN=
 export DDNZ_EXT_PORT=

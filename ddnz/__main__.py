@@ -79,9 +79,10 @@ def main():
     logging.info("Started")
     ext_port = int(os.environ['DDNZ_EXT_PORT'])
     int_port = int(os.environ['DDNZ_INT_PORT'])
+    proxy = os.getenv('DDNZ_PROXY', '')
 
     data = getlastdata()
-    dip = getip(ext_port, int_port)
+    dip = getip(ext_port, int_port, proxy)
 
     old_ip = data.get('ip')
     new_ip = None

@@ -1,5 +1,6 @@
 @echo off
 setlocal
+set DDNZ_PROXY=
 set DDNZ_DUCKDNS_DOMAIN=
 set DDNZ_DUCKDNS_TOEKN=
 set DDNZ_EXT_PORT=
